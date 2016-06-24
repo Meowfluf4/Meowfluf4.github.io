@@ -2,29 +2,176 @@
 <html>
 
 <head>
-<em><title>Zach Callison</title></em>
+<link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css">
+<script type="text/javascript" src="assets/js/paper.js"></script>
+<!-- Define inlined PaperScript associate it with myCanvas -->
+<script type="text/paperscript" canvas="myCanvas">
+	
+// kynd.info 2014
 
-<em><h1>Zach Callison</h1></em>
+function Ball(r, p, v) {
+	this.radius = r;
+	this.point = p;
+	this.vector = v;
+	this.maxVec = 15;
+	this.numSegment = Math.floor(r / 3 + 2);
+	this.boundOffset = [];
+	this.boundOffsetBuff = [];
+	this.sidePoints = [];
+	this.path = new Path({
+		fillColor: {
+			hue: Math.random() * 360,
+			saturation: 1,
+			brightness: 1
+		},
+		blendMode: 'lighter'
+	});
 
-<hr color="#2c3e50">
+	for (var i = 0; i < this.numSegment; i ++) {
+		this.boundOffset.push(this.radius);
+		this.boundOffsetBuff.push(this.radius);
+		this.path.add(new Point());
+		this.sidePoints.push(new Point({
+			angle: 360 / this.numSegment * i,
+			length: 1
+		}));
+	}
+}
+
+Ball.prototype = {
+	iterate: function() {
+		this.checkBorders();
+		if (this.vector.length > this.maxVec)
+			this.vector.length = this.maxVec;
+		this.point += this.vector;
+		this.updateShape();
+	},
+
+	checkBorders: function() {
+		var size = view.size;
+		if (this.point.x < -this.radius)
+			this.point.x = size.width + this.radius;
+		if (this.point.x > size.width + this.radius)
+			this.point.x = -this.radius;
+		if (this.point.y < -this.radius)
+			this.point.y = size.height + this.radius;
+		if (this.point.y > size.height + this.radius)
+			this.point.y = -this.radius;
+	},
+
+	updateShape: function() {
+		var segments = this.path.segments;
+		for (var i = 0; i < this.numSegment; i ++)
+			segments[i].point = this.getSidePoint(i);
+
+		this.path.smooth();
+		for (var i = 0; i < this.numSegment; i ++) {
+			if (this.boundOffset[i] < this.radius / 4)
+				this.boundOffset[i] = this.radius / 4;
+			var next = (i + 1) % this.numSegment;
+			var prev = (i > 0) ? i - 1 : this.numSegment - 1;
+			var offset = this.boundOffset[i];
+			offset += (this.radius - offset) / 15;
+			offset += ((this.boundOffset[next] + this.boundOffset[prev]) / 2 - offset) / 3;
+			this.boundOffsetBuff[i] = this.boundOffset[i] = offset;
+		}
+	},
+
+	react: function(b) {
+		var dist = this.point.getDistance(b.point);
+		if (dist < this.radius + b.radius && dist != 0) {
+			var overlap = this.radius + b.radius - dist;
+			var direc = (this.point - b.point).normalize(overlap * 0.015);
+			this.vector += direc;
+			b.vector -= direc;
+
+			this.calcBounds(b);
+			b.calcBounds(this);
+			this.updateBounds();
+			b.updateBounds();
+		}
+	},
+
+	getBoundOffset: function(b) {
+		var diff = this.point - b;
+		var angle = (diff.angle + 180) % 360;
+		return this.boundOffset[Math.floor(angle / 360 * this.boundOffset.length)];
+	},
+
+	calcBounds: function(b) {
+		for (var i = 0; i < this.numSegment; i ++) {
+			var tp = this.getSidePoint(i);
+			var bLen = b.getBoundOffset(tp);
+			var td = tp.getDistance(b.point);
+			if (td < bLen) {
+				this.boundOffsetBuff[i] -= (bLen  - td) / 2;
+			}
+		}
+	},
+
+	getSidePoint: function(index) {
+		return this.point + this.sidePoints[index] * this.boundOffset[index];
+	},
+
+	updateBounds: function() {
+		for (var i = 0; i < this.numSegment; i ++)
+			this.boundOffset[i] = this.boundOffsetBuff[i];
+	}
+};
+
+//--------------------- main ---------------------
+
+var balls = [];
+var numBalls = 18;
+for (var i = 0; i < numBalls; i++) {
+	var position = Point.random() * view.size;
+	var vector = new Point({
+		angle: 360 * Math.random(),
+		length: Math.random() * 10
+	});
+	var radius = Math.random() * 60 + 60;
+	balls.push(new Ball(radius, position, vector));
+}
+
+function onFrame() {
+	for (var i = 0; i < balls.length - 1; i++) {
+		for (var j = i + 1; j < balls.length; j++) {
+			balls[i].react(balls[j]);
+		}
+	}
+	for (var i = 0, l = balls.length; i < l; i++) {
+		balls[i].iterate();
+	}
+}
+
+</script>
+</head>
 
 <body>
 <ul class="navbar">
-<il class="navitem"> <a href="page.html">Go to Page</a></il>
-<li class="navitem"> <a href="becauseican.html">Go to Another page</a></li>
+<li class="navitem"> <a href="index.html">Home</a></li>
+<li class="navitem"> <a href="page.html">Background</a></il>
+<li class="navitem"> <a href="becauseican.html">Hobbies</a></li>
+<li class="navitem"> <a href="Emma.html">Intrests</a></li>
 </ul>
 
-<em><p>Zach Callison was born October 23, 1997. He is a voice actor from America. He voice Acts prince james from Sophia the First ansd Steven Universe from Steven Universe, Billy from im in the band, King Tut from mr.peabody and sherman, and Young Jiro from The Wind Rises.He is 18  years old now.Thanks for reading!!!!!!!!!!!!!</em>
-
-<img src="https://teeninfonet.files.wordpress.com/2014/12/zach_callison_hs_33.jpg"width="284"height="300"></imgs>
-
-<strong> <h4>Stuff</h4></strong>
-     <li>Steven Univerese</li>
-     <li>Sophia the First</li>
-     <li>The Wind Rises</li><iframe width="560" height="315" src="https://www.youtube.com/embed/C8gQfRRPTnE" frameborder="0" allowfullscreen></iframe>
-     <a href="page.html">Click here to go to another page</a>
-     <a href="https://meowfluf4.github.io/becauseican.html">[because i can]</a>
-<a href="https://en.wikipedia.org/wiki/Zach_Callison"> Click for Wiki page!</a>
+<button><a href="https://github.com/Meowfluf4/Meowfluf4.github.io">Click to go to my Github!</a></button>
 
 
+<div id="homepage">
+<canvas id="myCanvas" width="1420px" height="920px"></canvas>
+</div>
 
+<center>
+<div id="text">
+<hr color="#2c3e50">
+<em><h1 align="center">Emma M.</h1></em>
+<em><h3 align="center">Weird Nice Funny</h3></em>
+<hr color="#2c3e50">
+</div>
+</center>
+
+
+</body>
+
+</html>
